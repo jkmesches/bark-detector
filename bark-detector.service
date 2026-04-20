@@ -1,0 +1,17 @@
+[Unit]
+Description=Outdoor bark detector (acoustic event capture + MQTT/InfluxDB publisher)
+After=network-online.target sound.target pipewire.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust WorkingDirectory and ExecStart to match your install location.
+WorkingDirectory=%h/bark-detector
+ExecStart=%h/bark-detector/venv/bin/python3 %h/bark-detector/bark_detector.py
+Restart=on-failure
+RestartSec=3
+StandardOutput=append:%h/bark-detector/bark_detector.log
+StandardError=append:%h/bark-detector/bark_detector.log
+
+[Install]
+WantedBy=default.target

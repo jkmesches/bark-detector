@@ -1,0 +1,35 @@
+# Local config (contains secrets)
+config.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Runtime artifacts
+recordings/
+*.log
+bark_labels.xlsx
+bark_scores.json
+misclassified.csv
+tuning_report.txt
+fold_models/
+
+# LaTeX build artifacts
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.synctex.gz
+report/*.fls
+report/*.fdb_latexmk
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

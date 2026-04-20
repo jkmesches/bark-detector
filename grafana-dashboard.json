@@ -1,0 +1,195 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_INFLUXDB",
+      "label": "InfluxDB",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "influxdb",
+      "pluginName": "InfluxDB"
+    }
+  ],
+  "title": "Bark Detector",
+  "uid": null,
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Bark Events Over Time",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 16, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dB",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "points",
+            "pointSize": 8,
+            "showPoints": "always"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "threshold_dbfs" },
+            "properties": [
+              { "id": "custom.drawStyle", "value": "line" },
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } },
+              { "id": "custom.pointSize", "value": 0 },
+              { "id": "custom.showPoints", "value": "never" }
+            ]
+          }
+        ]
+      },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"bark_events\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bark_event\")\n  |> filter(fn: (r) => r._field == \"peak_rms_dbfs\")\n  |> filter(fn: (r) => r.source != \"test\")"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"bark_events\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bark_event\")\n  |> filter(fn: (r) => r._field == \"threshold_dbfs\")\n  |> filter(fn: (r) => r.source != \"test\")"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Bark Count per Event",
+      "type": "timeseries",
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "custom": {
+            "drawStyle": "bars",
+            "barAlignment": 0,
+            "fillOpacity": 80
+          }
+        }
+      },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"bark_events\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bark_event\")\n  |> filter(fn: (r) => r._field == \"bark_count\")\n  |> filter(fn: (r) => r.source != \"test\")"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Event Duration",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60
+          }
+        }
+      },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"bark_events\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bark_event\")\n  |> filter(fn: (r) => r._field == \"duration_s\")\n  |> filter(fn: (r) => r.source != \"test\")"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Total Barks",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 8, "w": 6, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 25 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"bark_events\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bark_event\")\n  |> filter(fn: (r) => r._field == \"bark_count\")\n  |> filter(fn: (r) => r.source != \"test\")\n  |> sum()\n  |> rename(columns: {_value: \"Total Barks\"})"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Total Events",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 8, "w": 6, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 15 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"bark_events\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bark_event\")\n  |> filter(fn: (r) => r._field == \"peak_rms_dbfs\")\n  |> filter(fn: (r) => r.source != \"test\")\n  |> count()\n  |> rename(columns: {_value: \"Events\"})"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Hourly Bark Frequency",
+      "type": "barchart",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "purple" }
+        }
+      },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"bark_events\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bark_event\")\n  |> filter(fn: (r) => r._field == \"bark_count\")\n  |> filter(fn: (r) => r.source != \"test\")\n  |> aggregateWindow(every: 1h, fn: sum, createEmpty: true)"
+        }
+      ]
+    }
+  ]
+}

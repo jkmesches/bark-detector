@@ -1,0 +1,32 @@
+{
+  "audio": {
+    "sample_rate": 48000,
+    "clip_seconds": 3.0,
+    "n_fft": 1024,
+    "hop_length": 256,
+    "n_mels": 64,
+    "f_min": 50.0,
+    "f_max": 20000.0
+  },
+  "normalize": {
+    "mean": -59.55711364746094,
+    "std": 20.032812118530273
+  },
+  "classes": [
+    "NO",
+    "YES"
+  ],
+  "n_train": 702,
+  "oof_accuracy": 0.9558404558404558,
+  "oof_confusion_matrix": [
+    [
+      240,
+      18
+    ],
+    [
+      13,
+      431
+    ]
+  ],
+  "default_threshold": 0.5
+}

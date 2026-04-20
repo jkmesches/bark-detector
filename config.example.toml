@@ -1,0 +1,62 @@
+# Copy this to config.toml and adjust for your setup.
+# bark_detector.py loads config.toml from the project root on startup.
+
+filter = [
+    { type = "bandpass", enabled = true, low_hz = 600.0, high_hz = 800.0, order = 12 },
+]
+
+[audio]
+sample_rate = 48000
+chunk = 4096
+# Match your input device. These are examples for an onboard Realtek codec
+# accessed through PipeWire.
+pipewire_source = "alsa_input.pci-0000_00_1f.3.analog-stereo"
+device_match = "ALC897 Analog"
+device_exclude = "Alt"
+
+[audio.alsa]
+rec_level = 49
+mic_boost = 1
+
+[audio.gain]
+digital_db = 19
+
+[detection]
+threshold_dbfs = -30.0
+pre_roll_s = 1.0
+cooldown_s = 0.2
+max_event_s = 3.0
+min_event_s = 0.1
+
+[recording]
+dir = "recordings"
+include_pre_roll = true
+
+[mqtt]
+broker = "mqtt.local"
+port = 1883
+username = "bark-detector"
+password = "CHANGE_ME"
+client_id = "bark-detector"
+qos = 1
+connect_timeout = 5
+
+[mqtt.event]
+topic = "homeassistant/mic/dog"
+include_recording = true
+
+[mqtt.event.extra]
+
+[mqtt.homeassistant]
+discovery = true
+discovery_prefix = "homeassistant"
+object_id = "bark_detector"
+device_name = "Bark Detector"
+
+[influxdb]
+enabled = false
+url = "http://influxdb.local:8086"
+token = "CHANGE_ME"
+org = "home"
+bucket = "bark_events"
+measurement = "bark_event"

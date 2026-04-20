@@ -1,0 +1,280 @@
+  # ── Bark Detector Dashboard ──────────────────────────────
+  # Paste this as a new view inside your dashboard YAML
+  # (at the same level as your other "- type: sections" entries)
+  - type: sections
+    title: Bark Detector
+    icon: mdi:dog
+    path: bark-detector
+    max_columns: 4
+    dense_section_placement: true
+    sections:
+
+      # ── Column 1: Status & Daily Stats ─────────────────
+      - type: grid
+        column_span: 1
+        cards:
+          - type: heading
+            icon: mdi:dog
+            heading: Bark Detector
+            heading_style: title
+
+          # Status indicator
+          - type: custom:mushroom-template-card
+            entity: sensor.bark_detector_status
+            primary: Detector Status
+            secondary: "{{ states('sensor.bark_detector_status') | title }}"
+            icon: mdi:microphone
+            icon_color: >-
+              {% if states('sensor.bark_detector_status') == 'listening' %}green
+              {% elif states('sensor.bark_detector_status') == 'offline' %}red
+              {% else %}grey{% endif %}
+            tap_action:
+              action: more-info
+            grid_options:
+              columns: full
+
+          - type: heading
+            heading: Today's Activity
+            heading_style: subtitle
+
+          # Daily stats row
+          - type: custom:stack-in-card
+            mode: horizontal
+            cards:
+              - type: custom:mushroom-template-card
+                entity: sensor.bark_detector_daily_bark_total
+                primary: Daily Barks
+                secondary: "{{ states('sensor.bark_detector_daily_bark_total') | int(0) }}"
+                icon: mdi:counter
+                icon_color: >-
+                  {% set n = states('sensor.bark_detector_daily_bark_total') | int(0) %}
+                  {% if n < 10 %}green
+                  {% elif n < 25 %}orange
+                  {% else %}red{% endif %}
+                layout: vertical
+                fill_container: true
+                tap_action:
+                  action: more-info
+              - type: custom:mushroom-template-card
+                entity: sensor.bark_detector_daily_event_total
+                primary: Events
+                secondary: "{{ states('sensor.bark_detector_daily_event_total') | int(0) }}"
+                icon: mdi:calendar-today
+                icon_color: >-
+                  {% set n = states('sensor.bark_detector_daily_event_total') | int(0) %}
+                  {% if n < 5 %}green
+                  {% elif n < 15 %}orange
+                  {% else %}red{% endif %}
+                layout: vertical
+                fill_container: true
+                tap_action:
+                  action: more-info
+            grid_options:
+              columns: full
+
+          - type: heading
+            heading: Last Event
+            heading_style: subtitle
+
+          # Last event details
+          - type: custom:stack-in-card
+            mode: vertical
+            cards:
+              - type: custom:mushroom-template-card
+                entity: sensor.bark_detector_last_bark_event
+                primary: Time
+                secondary: >-
+                  {% set ts = states('sensor.bark_detector_last_bark_event') %}
+                  {% if ts and ts not in ['unknown','unavailable',''] %}
+                    {{ as_timestamp(ts) | timestamp_custom('%I:%M %p') }}
+                  {% else %}No events yet{% endif %}
+                icon: mdi:clock-outline
+                icon_color: amber
+                tap_action:
+                  action: more-info
+              - type: custom:mushroom-template-card
+                entity: sensor.bark_detector_peak_rms
+                primary: Peak Volume
+                secondary: "{{ states('sensor.bark_detector_peak_rms') }} dBFS"
+                icon: mdi:volume-high
+                icon_color: >-
+                  {% set v = states('sensor.bark_detector_peak_rms') | float(-60) %}
+                  {% if v > -10 %}red
+                  {% elif v > -15 %}orange
+                  {% else %}blue{% endif %}
+                tap_action:
+                  action: more-info
+              - type: custom:mushroom-template-card
+                entity: sensor.bark_detector_barks_in_last_event
+                primary: Barks
+                secondary: >-
+                  {{ states('sensor.bark_detector_barks_in_last_event') }} barks over
+                  {{ states('sensor.bark_detector_last_event_duration') }}s
+                icon: mdi:dog-side
+                icon_color: deep-purple
+                tap_action:
+                  action: more-info
+            grid_options:
+              columns: full
+
+      # ── Column 2: Charts ───────────────────────────────
+      - type: grid
+        column_span: 3
+        cards:
+          - type: heading
+            heading: Bark Activity
+            heading_style: title
+            icon: mdi:chart-timeline-variant
+
+          # Peak RMS over time with threshold line
+          - type: custom:apexcharts-card
+            graph_span: 24h
+            header:
+              show: true
+              title: Peak RMS vs Threshold
+              show_states: true
+              colorize_states: true
+            apex_config:
+              chart:
+                foreColor: '#e5e7eb'
+              legend:
+                show: true
+                position: top
+              tooltip:
+                theme: dark
+            series:
+              - entity: sensor.bark_detector_peak_rms
+                name: Peak RMS
+                type: line
+                color: '#4fc3f7'
+                stroke_width: 0
+                show:
+                  extremas: true
+                  in_header: raw
+                group_by:
+                  func: last
+                  duration: 1m
+              - entity: sensor.bark_detector_threshold
+                name: Threshold
+                type: line
+                color: '#ff4444'
+                stroke_width: 2
+                curve: stepline
+                show:
+                  in_header: false
+                group_by:
+                  func: last
+                  duration: 5m
+            grid_options:
+              columns: full
+
+          # Bark count per event (bar chart)
+          - type: custom:apexcharts-card
+            graph_span: 24h
+            header:
+              show: true
+              title: Barks per Event
+              show_states: true
+              colorize_states: true
+            apex_config:
+              chart:
+                foreColor: '#e5e7eb'
+              tooltip:
+                theme: dark
+            series:
+              - entity: sensor.bark_detector_barks_in_last_event
+                name: Barks
+                type: column
+                color: '#ffb74d'
+                group_by:
+                  func: last
+                  duration: 1m
+            grid_options:
+              columns: 2
+
+          # Event duration (bar chart)
+          - type: custom:apexcharts-card
+            graph_span: 24h
+            header:
+              show: true
+              title: Event Duration
+              show_states: true
+              colorize_states: true
+            apex_config:
+              chart:
+                foreColor: '#e5e7eb'
+              tooltip:
+                theme: dark
+            series:
+              - entity: sensor.bark_detector_last_event_duration
+                name: Duration
+                type: column
+                color: '#81c784'
+                group_by:
+                  func: last
+                  duration: 1m
+            grid_options:
+              columns: 2
+
+          - type: heading
+            heading: Trends
+            heading_style: subtitle
+
+          # Hourly bark totals
+          - type: custom:apexcharts-card
+            graph_span: 24h
+            span:
+              end: hour
+            header:
+              show: true
+              title: Hourly Bark Frequency
+              show_states: false
+            apex_config:
+              chart:
+                foreColor: '#e5e7eb'
+              tooltip:
+                theme: dark
+            series:
+              - entity: sensor.bark_detector_barks_in_last_event
+                name: Barks
+                type: column
+                color: '#ce93d8'
+                group_by:
+                  func: sum
+                  duration: 1h
+            grid_options:
+              columns: full
+
+          # 7-day overview
+          - type: custom:apexcharts-card
+            graph_span: 7d
+            span:
+              end: day
+            header:
+              show: true
+              title: 7-Day Overview
+              show_states: false
+            apex_config:
+              chart:
+                foreColor: '#e5e7eb'
+              tooltip:
+                theme: dark
+            series:
+              - entity: sensor.bark_detector_barks_in_last_event
+                name: Total Barks
+                type: column
+                color: '#4fc3f7'
+                group_by:
+                  func: sum
+                  duration: 1d
+              - entity: sensor.bark_detector_peak_rms
+                name: Loudest (dBFS)
+                type: line
+                color: '#ff4444'
+                group_by:
+                  func: min
+                  duration: 1d
+                show:
+                  in_header: false
+            grid_options:
+              columns: full
